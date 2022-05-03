@@ -21,7 +21,7 @@ class AuthController extends Controller
             'password' =>'required|string',
         ]);
 
-        $credentials = $request->only('email', password);
+        $credentials = $request->only('email', 'password');
 
         $token = Auth::attempt($credentials);
 
@@ -31,7 +31,63 @@ class AuthController extends Controller
                 'message' => 'Unauthorized'
             ],401);
         }
+
+        $user = Auth::user();
+        return  response()->json([
+            'status'=>'success',
+            'user' => $user,
+            'authorization' => [
+                'token' => $token,
+                'type' => 'bearer',
+            ]
+            ]);
+
     }
 
+    public function register(Request $request){
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password'=>'required|string|min:6',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        $token = Auth::login($user);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Usuario Criado com Sucesso.',
+            'user'=>$user,
+            'authorisation' => [
+                'token' => $token,
+                'type'=>'bearer',
+            ]
+            ]);
+    }
+
+
+    public function logout(){
+        Auth::logout();
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Deslogado com Sucesso.',
+        ]);
+    }
+
+
+    public function refresh(){
+        return response()->json([
+            'status' => 'success',
+            'user'=>Auth::user(),
+            'authorisation' => [
+                'token'=>Auth::refresh(),
+                'type' => 'bearer',
+            ]
+            ]);
+    }
 
 }
